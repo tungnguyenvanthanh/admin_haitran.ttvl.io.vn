@@ -1,0 +1,51 @@
+name: Update admin-shared submodule
+
+on:
+  repository_dispatch:
+    types: [update-submodule]
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update submodule
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          cd admin-shared
+          git fetch origin main
+          git checkout origin/main
+          cd ..
+          git add admin-shared
+          git commit -m "Update submodule" || echo "No submodule changes"
+
+      - name: Copy admin-shared to docs/
+        run: |
+          rm -rf docs
+          mkdir docs
+          cp -r admin-shared/* docs/
+
+      - name: Add .nojekyll
+        run: |
+          touch docs/.nojekyll
+
+      - name: Add CNAME
+        run: |
+          echo "admin.hai_tran.ttvl.io.vn" > docs/CNAME
+
+      - name: Commit and push
+        run: |
+          git add docs
+          git commit -m "Update docs from admin-shared" || echo "No docs changes"
+          git push
+
+      - name: Check files in docs
+        run: |
+          find docs/ -type f
